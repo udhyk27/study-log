@@ -671,3 +671,77 @@ Rocky Linux: CentOS 지원 종료에 따라 그 대안으로 탄생한 배포판
 ** 리눅스 커널 기반의 임베디드 OS(Tizen, webOS, GENIVI)가 아닌 것(QNX 등)을 찾는 문제가 출제됨
 ** PDF 뷰어인 Evince와 리브레오피스/오픈오피스의 도구별 명칭(oocalc, oowriter 등) 매칭이 핵심임
 ** CentOS 종료 이후 등장한 배포판이 Rocky Linux라는 시사적인 내용도 기억해 두면 좋음
+
+
+
+=====
+시험 5분전 요약
+=====
+1. 파일 시스템 및 디스크 관리
+/etc/mtab: 현재 마운트된 블록 시스템 정보임
+/etc/fstab: 파일 시스템 정적 정보 저장 및 부팅 시 마운트 파티션 정보 기록함
+eject: 미디어 해제 및 장치 제거임
+fdisk: 파티션 생성, 삭제, 타입 결정 수행함
+mkfs / mke2fs: 리눅스 파일 시스템 생성 및 포맷 (ext2, ext3, ext4)임
+fsck: 파일 시스템 무결성 점검 및 대화식 복구 수행함
+/lost+found: fsck 사용 디렉터리로 손상된 파일을 여기로 연결해 오류 수정함
+e2fsck: ext 계열 점검 및 복구용이며, xfs_repair는 xfs 전용임
+du: 디렉터리별 사용량 확인 (-s: 전체 합계, -h: 단위 표기)임
+df: 마운트된 디스크 남은 용량 확인 (-T: 유형 확인, -h: 단위 표기)임
+blkid: 파티션의 UUID와 파일 시스템 정보를 확인함
+lsblk: 블록 장치 정보를 트리 형식으로 보여줌
+/proc/partitions: 현재 시스템의 파티션 정보를 제공함
+
+2. 시그널 및 프로세스 제어
+1 (SIGHUP): 터미널 종료 시 재시작함
+2 (SIGINT): 종료 (Ctrl+C)임
+3 (SIGQUIT): 코어 덤프와 함께 종료 (Ctrl+)임
+9 (SIGKILL): 강제 종료임
+15 (SIGTERM): 정상 종료 (kill 기본값)임
+18 (SIGCONT): 중지된 프로세스 재개임
+19 (SIGSTOP): 프로세스 정지임
+20 (SIGTSTP): 대기 상태로 전환 (Ctrl+Z)임
+bg / fg: 백그라운드와 포어그라운드 작업 전환 명령어임
+killall: 프로세스명을 인자로 사용해 한꺼번에 종료함
+nice / renice: 우선순위 변경 (nice는 실행 시 이름 사용, renice는 실행 중 PID 사용)임
+
+3. 편집기 특징
+pico: 메모장과 유사하며 자유 소프트웨어 라이선스가 아님 (nano의 기반)임
+emacs: 리처드 스톨만이 개발했으며 LISP 기반임 (Ctrl+A: 맨 앞, Ctrl+E: 맨 뒤 이동)임
+vi: 빌 조이가 개발한 BSD 릴리즈 모드형 편집기임
+vim: 브람 무레나르가 개발함
+gedit: GNOME 환경용 GUI 편집기로 GTK+ 기반이며 텍스트 콘솔에서는 사용 불가함
+
+4. 패키지 관리 도구
+RPM: -i(설치), -U(업그레이드), -e(삭제), --nodeps(의존성 무시), --force(강제 설치)임
+YUM: install, groupinstall, update, remove, info, list, search 지원함
+dpkg: 저레벨 도구로 -i(설치), -r(삭제), -P(설정까지 삭제), -L(파일 목록 확인)임
+기타: 우분투는 aptitude, SUSE는 Zypper를 사용함
+
+5. 압축 및 소스 설치
+tar 옵션: t(목록), z(gzip), j(bzip2), J(xz)임
+압축 도구: compress(.Z), gzip(.gz), bzip2(.bz2), xz(.xz) 순으로 압축률이 좋아짐
+소스 설치: ./configure(환경 설정 및 Makefile 생성) -> make(컴파일) -> make install(파일 설치) 순임
+CMake: MAKE의 대용품으로 멀티 플랫폼을 지원함
+
+6. 프린터 및 X 윈도
+BSD 계열: lpr(요청), lpq(목록), lprm(삭제), lpc(컨트롤)임
+System V 계열: lp(요청), lpstat(상태), cancel(취소)임
+데스크톱 환경: KDE(QT, Kwin), GNOME(GTK+, Mutter/Metacity)임
+X 윈도 원격: xhost(IP 기반 접근 제어), xauth(사용자 인증 기반, .Xauthority 파일), DISPLAY(환경변수)임
+
+7. 네트워크 계층 및 프로토콜
+응용(7): 게이트웨이, 메시지 단위임
+표현(6): 부호화, 압축, 암호화임
+세션(5): 연결 설정 및 유지임
+전송(4): TCP(Segment), UDP(Datagram), 게이트웨이임
+네트워크(3): IP, ICMP, 라우터, 패킷 단위임
+데이터 링크(2): 브리지, 스위치, 프레임 단위임
+물리(1): 리피터, 허브, 비트 단위임
+주요 포트: FTP(20,21), SSH(22), Telnet(23), SMTP(25), DNS(53), HTTP(80), POP3(110), HTTPS(443)임
+
+** /etc/fstab으로 파티션 정보를 기록하고 fdisk로 작업 후 mkfs로 생성하는 전체 흐름을 숙지함
+** 시그널 9번과 15번의 차이, 그리고 Ctrl+C(2번)와 Ctrl+Z(20번)의 번호 매칭이 중요함
+** vi 편집기의 :set nu(번호 표시)와 :set nonu(해제) 명령어를 구분함
+** RPM의 --nodeps 옵션과 YUM의 온라인 설치 특징을 비교함
+** OSI 7계층의 물리(1)-데이터링크(2)-네트워크(3) 장비 매칭은 무조건 나옴
