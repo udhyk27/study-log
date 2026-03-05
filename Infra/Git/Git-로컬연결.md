@@ -44,12 +44,13 @@ git merge main
 
 * 충돌 파일 있는지 확인
 
-6) 내 브랜치 push → PR(풀 리퀘스트) 원격 main에 병합 요청
-(최초에만 원격 & 로컬 연결하기 위해 옵션 사용 git push -u origin ydh)
+6) 원격 ydh 브랜치에 push (최초에는 push -u 하면 원격, 로컬 연결됨)
 git push origin ydh
 
-7) 깃 저장소에서 관리자 또는 내가 merge (병합)
-
+7) PR 생성 후 merge
+→ GitHub에서 ydh → main으로 PR(풀 리퀘스트) 생성
+→ 관리자 또는 내가 merge 승인
+→ 원격 main에 병합 완료
 
 
 ### merge 이후 새 브랜치로 작업 ###
