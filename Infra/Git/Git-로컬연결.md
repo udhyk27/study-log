@@ -60,7 +60,7 @@ git checkout main
 2) main 브랜치 최신화
 git pull origin main
 
-3) 로컬 브랜치 삭제 (강제 삭제는 -D)
+3) 로컬 브랜치 삭제 (강제 삭제는 -D) (삭제 필수 X, 기존 브랜치에서 작업 가능)
 git branch -d ydh
 
 5) (로컬) 새 브랜치 생성
