@@ -1,7 +1,7 @@
 디렉토리 
 git init
- git add .
- git commit --amend -m "text"
+git add .
+git commit --amend -m "text"
  
 
 ### 로컬 디렉토리에 git clone 후 연결 ### 
