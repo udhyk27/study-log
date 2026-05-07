@@ -1,4 +1,4 @@
-# study-log
+﻿# study-log
 
 공부한 내용을 주제별로 정리하는 저장소
 
@@ -6,12 +6,25 @@
 
 ```text
 study-log/
-├── Code/        # 코드 실습 및 프로젝트
-├── Infra/       # 인프라, CI/CD, 배포
-├── Log/         # 학습 기록 및 회고
-├── studyspace/  # 작업용 디렉토리
-├── にほん/       # 일본어 학습
-├── 기술질문/     # 기술 면접 대비
-├── 알고리즘/     # 알고리즘 문제 풀이
-├── 양식/         # 템플릿 및 문서 양식
-└── 자격증/       # 자격증 정리
+├── Backend/        # 백엔드 (Laravel, PHP 등)
+├── Frontend/       # 프론트엔드 (JavaScript 등)
+├── Infra/          # 인프라
+│   ├── AWS/
+│   ├── Database/
+│   ├── Docker/
+│   ├── Git/
+│   ├── Linux/
+│   ├── Network/
+│   ├── Oracle/
+│   └── Workflow/
+├── Blockchain/     # 블록체인 학습
+├── Language/       # 외국어 학습
+│   └── Japanese/
+├── Interview/      # 기술 면접 대비
+├── Algorithm/      # 알고리즘 문제 풀이
+├── Templates/      # 템플릿 및 문서 양식
+├── Projects/       # 작업/프로젝트 (linux-mastery 등)
+└── Log/            # 블로그 글
+    ├── Drafts/     # 작성 중 (# 로 시작)
+    └── Published/  # 작성 완료
+```
