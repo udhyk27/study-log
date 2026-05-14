@@ -8,8 +8,10 @@
 
 **포트폴리오 구성**
 - 메인 1: TicketFlow → 동시성 + Redis + Queue + 운영 로그
+- 서브 1: Mini Payment Ledger → 금액 정합성 / Idempotency
 - 메인 2: JProxy → 네트워크 프로그래밍 / 차별화
-- 서브: Mini Payment Ledger → 금액 정합성 / Idempotency
+- 서브 2: AI Prompt Gateway → 외부 API 연동 / 병렬 처리 / Fallback
+- 서브 3: Price Tracker → 스케줄러 / 크롤링 / 알림 자동화
 
 ---
 
@@ -121,7 +123,7 @@
 
 ---
 
-# 서브: Mini Payment Ledger (포인트 / 잔액 장부 시스템)
+# 서브 1: Mini Payment Ledger (포인트 / 잔액 장부 시스템)
 
 **역할**: 금액 정합성 / Idempotency / 감사 로그
 
@@ -307,6 +309,157 @@
 
 ---
 
+# 서브 2: AI Prompt Gateway
+
+**역할**: 외부 API 연동 / 병렬 처리 / 장애 대응 (Fallback)
+
+## 한 줄 설명
+
+GPT, Claude, Gemini를 하나의 API에서 관리하고 모델 선택, 병렬 비교, 장애 대응(Fallback)을 제공하는 AI Gateway.
+
+## 핵심 구현 기능
+
+### 모델 선택
+- GPT / Claude / Gemini 직접 선택
+
+### 병렬 응답 비교
+- 여러 모델 동시 호출
+- 응답 시간 / 내용 비교
+
+### 자동 Fallback
+- 모델 실패 시 자동 다른 모델 호출
+- 예: GPT 실패 → Claude → Gemini
+
+### Prompt 로그
+- 질문 / 응답 저장
+- 응답 시간 기록
+
+### Redis
+- 응답 캐시
+- Rate Limit
+
+## 자바/Spring 핵심 기술
+
+### 외부 API 연동
+- WebClient 기반 비동기 호출
+- 모델별 API 스펙 추상화
+
+### 병렬 처리
+- CompletableFuture
+- 여러 모델 동시 호출 후 결과 취합
+
+### 디자인 패턴
+- Strategy Pattern (모델별 호출 전략)
+- Chain of Responsibility (Fallback 체인)
+
+### 장애 대응
+- Retry (일시적 실패 재시도)
+- Timeout (응답 지연 차단)
+- Fallback (대체 모델 호출)
+
+### Redis 활용
+- 동일 프롬프트 응답 캐시
+- 사용자별 Rate Limit
+
+## 테스트
+
+- JUnit
+- 외부 API Mocking (WireMock 또는 MockWebServer)
+- Fallback 시나리오 테스트
+
+## 배포
+
+- Docker
+- AWS EC2
+
+## 핵심 어필 포인트
+
+- AI API Gateway 설계 (모델 추상화)
+- CompletableFuture 기반 병렬 요청 처리
+- Retry / Timeout / Fallback 장애 대응 구조
+- 모델 비교 기능 (응답 시간, 내용 차이)
+- 외부 API 연동 경험
+
+## 예상 기간
+
+2~3주
+
+---
+
+# 서브 3: Price Tracker (가격 추적 시스템)
+
+**역할**: 스케줄러 / 크롤링 / 알림 자동화
+
+## 한 줄 설명
+
+상품, ETF, GPU 등의 가격을 주기적으로 수집하고 목표 가격 도달 시 알림을 보내는 시스템.
+
+## 핵심 구현 기능
+
+### 추적 등록
+- URL 등록
+- 목표 가격 설정
+
+### 가격 수집
+- 주기적 크롤링
+- 가격 변화 감지
+
+### 목표가 알림
+- 목표 가격 도달 시 Slack / Email 알림
+
+### 가격 이력
+- 가격 변동 조회
+- 최저가 / 최고가 확인
+
+### Redis
+- 최근 가격 캐시
+- 중복 알림 방지
+
+## 자바/Spring 핵심 기술
+
+### 스케줄링
+- @Scheduled로 주기적 가격 수집
+
+### 외부 데이터 수집
+- Jsoup (HTML 파싱)
+- WebClient (API 호출)
+
+### Retry
+- 크롤링 실패 시 재시도
+- 영구 실패는 에러 로그
+
+### 비동기 알림
+- @Async로 Slack / Email 발송
+- 알림 실패 격리
+
+### Redis 활용
+- 최근 가격 캐시 (DB 부하 감소)
+- 중복 알림 방지 (이미 알림 보낸 목표가 기록)
+
+## 테스트
+
+- JUnit
+- 스케줄러 동작 검증
+- Mocking 기반 크롤링 테스트
+
+## 배포
+
+- Docker
+- AWS EC2
+
+## 핵심 어필 포인트
+
+- Scheduler 기반 자동화
+- 외부 데이터 수집 (크롤링)
+- 비동기 알림 시스템
+- Retry / 장애 격리
+
+## 예상 기간
+
+1~2주
+
+---
+
 # 공통 운영 / 배포
 
 ## Docker
@@ -316,19 +469,21 @@
 - 자동 빌드 / 테스트 / 배포
 
 ## AWS EC2
-- 배포 환경 (TicketFlow, Mini Payment Ledger)
+- 배포 환경 (TicketFlow, Mini Payment Ledger, AI Prompt Gateway, Price Tracker)
 - JProxy는 로컬 실행
 
 ---
 
-# 시간 배분 (총 약 3개월)
+# 시간 배분 (총 약 4개월)
 
 | 순서 | 프로젝트 | 기간 | 비고 |
 |------|---------|------|------|
 | 1 | TicketFlow (메인 1) | 4~5주 | 동시성 + Queue + 운영 로그 통합 |
-| 2 | Mini Payment Ledger (서브) | 2주 | 금액 정합성 / Idempotency / 환불 |
+| 2 | Mini Payment Ledger (서브 1) | 2주 | 금액 정합성 / Idempotency / 환불 |
 | 3 | JProxy (메인 2) | 3~4주 | 차별화 |
-| 4 | 문서화 / 배포 정리 | 1주 | README, 성능 그래프, 데모 |
+| 4 | AI Prompt Gateway (서브 2) | 2~3주 | 외부 API / 병렬 / Fallback |
+| 5 | Price Tracker (서브 3) | 1~2주 | 스케줄러 / 크롤링 / 알림 |
+| 6 | 문서화 / 배포 정리 | 1주 | README, 성능 그래프, 데모 |
 
 ---
 
@@ -342,9 +497,11 @@
 
 # 프로젝트별 한 줄 어필
 
-- **TicketFlow**: 동시성 + 비동기 + 운영 로그를 한 도메인에서 통합 구현
+- **TicketFlow**: 동시성 + 비동기 + 운영 로그 통합 구현
 - **Mini Payment Ledger**: 금액 정합성 / Idempotency / 환불 처리
 - **JProxy**: 네트워크 프로그래밍으로 차별화
+- **AI Prompt Gateway**: 외부 API 병렬 처리 / Fallback 장애 대응
+- **Price Tracker**: 스케줄러 기반 자동화 / 크롤링 / 알림
 
 ---
 
@@ -354,9 +511,11 @@
    - 1~2주차: 회원, 상품, 선착순 구매, 락 비교
    - 3주차: Redis TTL, 운영 로그 Queue + Worker
    - 4~5주차: 통계 API, 성능 테스트, 배포
-2. **Mini Payment Ledger** (서브, 2주 안에 빠르게)
+2. **Mini Payment Ledger** (서브 1, 2주)
 3. **JProxy 진행** (메인 2, 차별화 포인트 확보)
-4. 문서화 / README / 성능 리포트 정리
+4. **AI Prompt Gateway** (서브 2, 2~3주)
+5. **Price Tracker** (서브 3, 1~2주)
+6. 문서화 / README / 성능 리포트 정리
 
 ---
 
