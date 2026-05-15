@@ -91,10 +91,10 @@ function getChangedMdFiles() {
 
   let output;
   try {
-    output = execSync(`git diff --name-status ${diffRange}`, {
-      cwd: REPO_ROOT,
-      encoding: 'utf-8',
-    });
+	output = execSync(`git -c core.quotepath=false diff --name-status ${diffRange}`, {
+	  cwd: REPO_ROOT,
+	  encoding: 'utf-8',
+	});
   } catch (err) {
     console.error('git diff 실패. 비교 대상 commit이 없거나 fetch-depth 부족.');
     return [];
@@ -102,21 +102,26 @@ function getChangedMdFiles() {
 
   const lines = output.split('\n').filter(Boolean);
   const files = [];
+  function stripQuotes(s) {
+  if (s && s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
+  	return s.slice(1, -1);
+  }
+    return s;
+  }
+
   for (const line of lines) {
-	const parts = line.split('\t');
-	const rawStatus = parts[0];
-	// status는 'A', 'M', 'D' 또는 'R100', 'R95' 등 → 첫 글자만 사용
-	const status = rawStatus[0];
+    const parts = line.split('\t');
+    const rawStatus = parts[0];
+    const status = rawStatus[0];
 
-	let oldPath = null;
-	let newPath;
+    let oldPath = null;
+    let newPath;
 
-	if (status === 'R') {
-	// R: parts[1] = old, parts[2] = new
-	oldPath = parts[1];
-	newPath = parts[2];
+    if (status === 'R') {
+  	  oldPath = stripQuotes(parts[1]);
+      newPath = stripQuotes(parts[2]);
 	} else {
-	newPath = parts[1];
+	  newPath = stripQuotes(parts[1]);
 	}
 
 	if (!newPath || !newPath.endsWith('.md')) continue;
