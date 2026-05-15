@@ -161,25 +161,14 @@ async function appendInChunks(pageId, allBlocks) {
 }
 
 function buildProperties(title, category, tag, createdAt, updatedAt, githubUrl) {
-  const props = {
+  return {
     Title: { title: [{ text: { content: title } }] },
+    Category: category ? { select: { name: category } } : { select: null },
+    Tag: tag ? { multi_select: [{ name: tag }] } : { multi_select: [] },
+    Created: createdAt ? { date: { start: createdAt } } : { date: null },
+    Updated: updatedAt ? { date: { start: updatedAt } } : { date: null },
+    'GitHub URL': githubUrl ? { url: githubUrl } : { url: null },
   };
-  if (category) {
-    props.Category = { select: { name: category } };
-  }
-  if (tag) {
-    props.Tag = { multi_select: [{ name: tag }] };
-  }
-  if (createdAt) {
-    props.Created = { date: { start: createdAt } };
-  }
-  if (updatedAt) {
-    props.Updated = { date: { start: updatedAt } };
-  }
-  if (githubUrl) {
-    props['GitHub URL'] = { url: githubUrl };
-  }
-  return props;
 }
 
 // 4. 한 파일 동기화
