@@ -1,4 +1,7 @@
-﻿# study-log
+---
+notion_page_id: 36181856-910c-812e-b833-de706abfb63e
+---
+# study-log
 
 공부한 내용을 주제별로 정리하는 저장소
 
