@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8141-a40a-d5631ba2c64a
+---
 디렉토리 
 git init
 git add .

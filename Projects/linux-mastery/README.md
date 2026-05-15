@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8160-96d1-d749b306df98
+---
 linux-mastery-project/
 ├─ README.md
 ├─ Level-1_CLI/

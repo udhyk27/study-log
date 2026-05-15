@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8126-aa27-c1e53bb479ba
+---
 fetch("https://jsonplaceholder.typicode.com/posts", option)
    .then(res => res.text())
    .then(text => console.log(text));

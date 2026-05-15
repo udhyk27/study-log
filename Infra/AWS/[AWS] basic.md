@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8109-ab97-cd98b24acd0f
+---
 AWS란 무엇인가
 
 AWS(Amazon Web Services)는 아마존이 제공하는 클라우드 컴퓨팅 서비스 플랫폼이다.

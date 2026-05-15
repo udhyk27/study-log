@@ -70,6 +70,7 @@ const EXCLUDE_PATTERNS = [
   /^\.github\//,
   /^scripts\//,
   /^node_modules\//,
+  /^Templates\//,
 ];
 
 function isExcluded(relPath) {

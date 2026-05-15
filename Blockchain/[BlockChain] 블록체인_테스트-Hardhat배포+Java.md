@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-81cb-8421-cba030aed340
+---
 ## 1 프로젝트 구조
 blockchain-musictrade-study/              ← Git 저장소 루트
 ├── .gitignore                ← 루트에 하나만

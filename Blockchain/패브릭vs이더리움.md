@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-813a-a000-d53f16233025
+---
 # Fabric vs Ethereum
 
 1. 프라이버시 — 가장 중요한 이유

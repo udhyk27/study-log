@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8190-b0fb-ddd62b015560
+---
 ### 디버깅 ###
 dd(DB::connection()->getDriverName());
 dd(DB::select("SELECT * FROM T_NOTICE"));

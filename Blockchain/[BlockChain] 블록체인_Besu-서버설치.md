@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-816e-b9ad-e741cb2c01e9
+---
 ### 서버 Besu 설치 ###
 1. 자바 17 or 21 설치 → 여기선 17로 진행
 sudo dnf install java-17-openjdk -y
@@ -115,7 +118,7 @@ besu \
   --rpc-http-port=8545 \
   --min-gas-price=0 &
 
-→ 백엔드에서 http://localhost:8545로 요청 보내서 블록체인에 데이터 읽기/쓰기 가능
+→ 백엔드에서 `http://localhost:8545`로 요청 보내서 블록체인에 데이터 읽기/쓰기 가능
 → 데이터 저장 경로
 → 초기 설정 파일
 → HTTP RPC 서버 활성화 (외부 API 호출)

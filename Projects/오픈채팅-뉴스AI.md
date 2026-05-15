@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-81ef-9b19-d8acbede0858
+---
 # 뉴스 오픈채팅 
 
 https://airfox1.tistory.com/2

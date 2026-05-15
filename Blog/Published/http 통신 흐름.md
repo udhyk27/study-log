@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-81e1-b5c3-edf5675531dd
+---
 # HTTP 통신 방법
 
 XMLHttpRequest (구식)

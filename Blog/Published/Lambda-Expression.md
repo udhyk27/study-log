@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-81b3-9cc9-da0ac06d96d7
+---
 람다식이란
 
 람다식(Lambda Expression)은 이름이 없는 함수를 간결한 표현식 형태로 작성하는 방식이다.

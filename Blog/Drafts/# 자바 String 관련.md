@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-81e2-99b8-c5831ed5b95b
+---
 # Java String, StringBuffer, StringBuilder 차이점
 
 Java에서 문자열을 다룰 때 흔히 사용하는 클래스는 `String`, `StringBuffer`, `StringBuilder`가 있습니다.

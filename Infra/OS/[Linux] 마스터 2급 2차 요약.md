@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-811b-a087-ee89e71f4d3d
+---
 프린터작업 ★★★★
 
 lpr    : 프린터출력(/usr/bin/lpr)

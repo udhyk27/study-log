@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-819f-ad84-f299fb3581a6
+---
 소켓(Socket)과 스트림(Stream) 개념 
 
  

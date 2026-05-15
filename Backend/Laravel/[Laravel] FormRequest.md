@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8136-97fb-c39b356d4c14
+---
 # 유효성 검사
 컨트롤러에서 Illuminate\Http\Request 객체가 제공하는 validate 메소드를 사용
 

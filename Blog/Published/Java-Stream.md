@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-81bb-a38f-e179dadef59e
+---
 # Java Stream
 
 Stream 은 데이터가 흐르는 통로이다.

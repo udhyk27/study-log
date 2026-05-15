@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8167-a825-fb409f12cc43
+---
            
 💡 WAS(Web Application Server)와 WS(Web Server)의 차이를 설명해주세요.
 WAS(Web Application Server)

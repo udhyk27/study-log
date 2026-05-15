@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8176-9635-ccbf7c001ee8
+---
 # JavaScript 실무 구조 정리 (Spring + Thymeleaf 기준)
 
 ## 1. 추천 프로젝트 구조

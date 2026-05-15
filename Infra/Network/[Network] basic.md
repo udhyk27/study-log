@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8143-a156-fcfa711c7535
+---
 TCP와 UDP 그리고 네트워크 기본 개념
 TCP와 UDP 차이
 TCP

@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-81d2-922e-d14be63c45e9
+---
            
 💡 HTTP 프로토콜에 대해 설명해주세요.
 HTTP(Hyper Text Transfer Protocol)이란 데이터를 주고 받기 위한 프로토콜이며, 서버/클라이언트 모델을 따릅니다.HTTP는 상태 정보를 저장하지 않는 Stateless의 특징과 클라이언트의 요청에 맞는 응답을 보낸 후 연결을 끊는 Connectionless의 특징을 가지고 있습니다.
