@@ -102,11 +102,26 @@ function getChangedMdFiles() {
   const lines = output.split('\n').filter(Boolean);
   const files = [];
   for (const line of lines) {
-    const [status, ...rest] = line.split('\t');
-    const filePath = rest.join('\t');
-    if (!filePath.endsWith('.md')) continue;
-    if (isExcluded(filePath)) continue;
-    files.push({ status, path: filePath });
+	const parts = line.split('\t');
+	const rawStatus = parts[0];
+	// status는 'A', 'M', 'D' 또는 'R100', 'R95' 등 → 첫 글자만 사용
+	const status = rawStatus[0];
+
+	let oldPath = null;
+	let newPath;
+
+	if (status === 'R') {
+	// R: parts[1] = old, parts[2] = new
+	oldPath = parts[1];
+	newPath = parts[2];
+	} else {
+	newPath = parts[1];
+	}
+
+	if (!newPath || !newPath.endsWith('.md')) continue;
+	if (isExcluded(newPath)) continue;
+
+	files.push({ status, path: newPath, oldPath });
   }
   return files;
 }
@@ -168,7 +183,7 @@ function buildProperties(title, category, tag, createdAt, updatedAt, githubUrl) 
 }
 
 // 4. 한 파일 동기화
-async function syncFile(relPath) {
+async function syncFile(relPath, oldPath = null) {
   const fullPath = path.join(REPO_ROOT, relPath);
   const raw = fs.readFileSync(fullPath, 'utf-8');
   const parsed = matter(raw);
@@ -185,13 +200,37 @@ async function syncFile(relPath) {
 
   let pageId = frontmatter.notion_page_id;
 
+  // rename인데 frontmatter에 page_id가 없으면 이전 경로의 git 이력에서 시도
+  // (예: 사용자가 frontmatter를 수동으로 지웠을 때 대비)
+  if (!pageId && oldPath) {
+    try {
+      const before = process.env.GITHUB_EVENT_BEFORE;
+      const ref = before && before !== '0000000000000000000000000000000000000000'
+        ? before
+        : 'HEAD~1';
+      const prevRaw = execSync(`git show ${ref}:"${oldPath}"`, {
+        cwd: REPO_ROOT, encoding: 'utf-8',
+      });
+      const prevParsed = matter(prevRaw);
+      pageId = prevParsed.data.notion_page_id || null;
+    } catch {
+      // 무시: 신규 생성으로 fallback
+    }
+  }
+
   if (pageId) {
-    // 업데이트 시도
     try {
       await notion.pages.update({ page_id: pageId, properties });
       await clearPageBlocks(pageId);
       await appendInChunks(pageId, blocks);
-      console.log(`[수정] ${relPath}`);
+      const label = oldPath ? `[이동] ${oldPath} → ${relPath}` : `[수정] ${relPath}`;
+      console.log(label);
+
+      // frontmatter에 page_id 없었던 경우 다시 기록
+      if (!frontmatter.notion_page_id) {
+        const newRaw = matter.stringify(content, { ...frontmatter, notion_page_id: pageId });
+        fs.writeFileSync(fullPath, newRaw, 'utf-8');
+      }
       return;
     } catch (err) {
       if (err.code === 'object_not_found') {
@@ -214,7 +253,6 @@ async function syncFile(relPath) {
     await appendInChunks(pageId, blocks.slice(100));
   }
 
-  // frontmatter 갱신
   const newRaw = matter.stringify(content, { ...frontmatter, notion_page_id: pageId });
   fs.writeFileSync(fullPath, newRaw, 'utf-8');
   console.log(`[신규] ${relPath}`);
@@ -222,9 +260,44 @@ async function syncFile(relPath) {
 
 // 5. 파일 삭제 처리
 async function deletePage(relPath) {
-  // 삭제는 git에서 이미 사라진 상태라 frontmatter를 읽을 수 없음
-  // → 이번 단계에서는 일단 로그만 남기고 건너뜀 (다음 단계에서 처리)
-  console.log(`[삭제 보류] ${relPath} (별도 처리 필요)`);
+  // 삭제된 파일은 워킹 트리에 없으므로 git에서 직전 버전을 가져옴
+  const before = process.env.GITHUB_EVENT_BEFORE;
+  const ref = before && before !== '0000000000000000000000000000000000000000'
+    ? before
+    : 'HEAD~1';
+
+  let prevContent;
+  try {
+    prevContent = execSync(`git show ${ref}:"${relPath}"`, {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+    });
+  } catch {
+    console.log(`[삭제 스킵] ${relPath} - 이전 버전 조회 실패`);
+    return;
+  }
+
+  const parsed = matter(prevContent);
+  const pageId = parsed.data.notion_page_id;
+
+  if (!pageId) {
+    console.log(`[삭제 스킵] ${relPath} - notion_page_id 없음`);
+    return;
+  }
+
+  try {
+    await notion.pages.update({
+      page_id: pageId,
+      archived: true,
+    });
+    console.log(`[삭제] ${relPath} → archived`);
+  } catch (err) {
+    if (err.code === 'object_not_found') {
+      console.log(`[삭제 스킵] ${relPath} - Notion 페이지 이미 없음`);
+    } else {
+      throw err;
+    }
+  }
 }
 
 // 메인
@@ -232,13 +305,14 @@ async function main() {
   const files = getChangedMdFiles();
   console.log(`변경된 .md 파일: ${files.length}개`);
 
-  for (const { status, path: filePath } of files) {
+  for (const { status, path: filePath, oldPath } of files) {
     try {
       if (status === 'D') {
         await deletePage(filePath);
+      } else if (status === 'R') {
+        await syncFile(filePath, oldPath);
       } else {
-        // A(추가), M(수정), R(이름변경)은 모두 syncFile로
-        // R의 경우 git diff에서 "R100\told\tnew" 형식이라 별도 처리 필요할 수 있음
+        // A, M
         await syncFile(filePath);
       }
     } catch (err) {
