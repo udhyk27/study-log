@@ -3,6 +3,47 @@ notion_page_id: 36181856-910c-8198-b6b9-d83f43a2d880
 ---
 # 프라이빗 블록체인 서버 이상 감지 → Discord 알림 자동화
 
+
+## VM별 작업 내용
+
+### 블록체인 VM (`rocky1-dev`, 10.84.255.101) - "감시 대상"
+
+| 작업 | 위치 / 파일 | 목적 |
+|------|------------|------|
+| node_exporter 설치 | `/usr/local/bin/node_exporter` | 시스템 메트릭 노출 (9100 포트) |
+| systemd 서비스 등록 | `/etc/systemd/system/node_exporter.service` | 부팅 시 자동 시작 |
+| Besu 데이터 크기 측정 스크립트 | `/usr/local/bin/besu_data_size.sh` | `du -s` 결과를 .prom 파일로 출력 |
+| textfile 출력 디렉토리 | `/var/lib/node_exporter/textfile/` | node_exporter가 읽을 커스텀 메트릭 위치 |
+| 시스템 cron | `/etc/cron.d/besu_data_size` | 5분마다 데이터 크기 갱신 |
+| 방화벽 룰 | firewalld rich rule | 9100 포트를 모니터링 VM IP에만 허용 |
+
+---
+
+### 모니터링 VM (`vbox`) - "감시 주체"
+
+| 작업 | 위치 / 파일 | 목적 |
+|------|------------|------|
+| 메인 스크립트 | `~/besu-monitor/monitor_prod.sh` | 5가지 항목 체크 + Discord 전송 |
+| 설정 파일 | `~/besu-monitor/config.env` (권한 600) | Webhook URL, 임계값 |
+| 상태 파일 | `~/besu-monitor/state/` | 이전 블록 번호, 이전 상태 저장 |
+| 사용자 cron | `crontab -e` | 매분 monitor_prod.sh 실행 |
+| 로그 | `~/besu-monitor/monitor.log` | 실행 결과 누적 |
+
+---
+
+### 5가지 감시 항목과 데이터 출처
+
+| 항목 | 출처 | 임계값 |
+|------|------|--------|
+| VM 다운 | ping | 1회 실패 시 |
+| RPC 응답 | Besu 8545 (`eth_blockNumber`) | 응답 없음/비정상 |
+| Peer 수 | Besu 8545 (`net_peerCount`) | 2개 미만 |
+| 블록 생성 | Besu 8545 + 상태 파일 비교 | 180초 정지 |
+| 루트 디스크 | node_exporter 9100 (기본 메트릭) | 80% 이상 |
+| Besu 데이터 폴더 | node_exporter 9100 (textfile collector) | 사용 중 디스크의 50% 이상 |
+
+
+
 이전에 Hyperledger Besu 기반 프라이빗 블록체인을 구축했던 내용을 정리했었습니다.
 
 VM 위에서 Besu 노드를 여러 개 구성해 운영하는 형태였는데, 테스트를 계속하다 보니 생각보다 노드가 자주 종료되거나 RPC 응답이 멈추는 경우가 발생했습니다.
