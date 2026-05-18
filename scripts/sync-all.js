@@ -91,10 +91,10 @@ function getChangedMdFiles() {
 
   let output;
   try {
-	output = execSync(`git -c core.quotepath=false diff --name-status ${diffRange}`, {
-	  cwd: REPO_ROOT,
-	  encoding: 'utf-8',
-	});
+    output = execSync(`git -c core.quotepath=false diff --name-status ${diffRange}`, {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+    });
   } catch (err) {
     console.error('git diff 실패. 비교 대상 commit이 없거나 fetch-depth 부족.');
     return [];
@@ -103,9 +103,9 @@ function getChangedMdFiles() {
   const lines = output.split('\n').filter(Boolean);
   const files = [];
   function stripQuotes(s) {
-  if (s && s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
-  	return s.slice(1, -1);
-  }
+    if (s && s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
+      return s.slice(1, -1);
+    }
     return s;
   }
 
@@ -118,16 +118,16 @@ function getChangedMdFiles() {
     let newPath;
 
     if (status === 'R') {
-  	  oldPath = stripQuotes(parts[1]);
+      oldPath = stripQuotes(parts[1]);
       newPath = stripQuotes(parts[2]);
-	} else {
-	  newPath = stripQuotes(parts[1]);
-	}
+    } else {
+      newPath = stripQuotes(parts[1]);
+    }
 
-	if (!newPath || !newPath.endsWith('.md')) continue;
-	if (isExcluded(newPath)) continue;
+    if (!newPath || !newPath.endsWith('.md')) continue;
+    if (isExcluded(newPath)) continue;
 
-	files.push({ status, path: newPath, oldPath });
+    files.push({ status, path: newPath, oldPath });
   }
   return files;
 }
@@ -196,7 +196,6 @@ async function syncFile(relPath, oldPath = null) {
   let pageId = frontmatter.notion_page_id;
 
   // rename인데 frontmatter에 page_id가 없으면 이전 경로의 git 이력에서 시도
-  // (예: 사용자가 frontmatter를 수동으로 지웠을 때 대비)
   if (!pageId && oldPath) {
     try {
       const before = process.env.GITHUB_EVENT_BEFORE;
@@ -221,7 +220,6 @@ async function syncFile(relPath, oldPath = null) {
       const label = oldPath ? `[이동] ${oldPath} → ${relPath}` : `[수정] ${relPath}`;
       console.log(label);
 
-      // frontmatter에 page_id 없었던 경우 다시 기록
       if (!frontmatter.notion_page_id) {
         const newRaw = matter.stringify(content, { ...frontmatter, notion_page_id: pageId });
         fs.writeFileSync(fullPath, newRaw, 'utf-8');
@@ -231,6 +229,11 @@ async function syncFile(relPath, oldPath = null) {
       if (err.code === 'object_not_found') {
         console.log(`[경고] page_id 무효 → 신규 생성: ${relPath}`);
         pageId = null;
+      } else if (err.code === 'validation_error') {
+        // 본문 검증 실패: 에러 페이지로 대체
+        console.log(`[검증 실패] ${relPath} → 에러 페이지로 대체`);
+        await writeErrorPage(relPath, pageId, err);
+        return;
       } else {
         throw err;
       }
@@ -238,19 +241,161 @@ async function syncFile(relPath, oldPath = null) {
   }
 
   // 신규 생성
+  try {
+    const page = await notion.pages.create({
+      parent: { type: 'data_source_id', data_source_id: DATA_SOURCE_ID },
+      properties,
+      children: blocks.slice(0, 100),
+    });
+    pageId = page.id;
+    if (blocks.length > 100) {
+      await appendInChunks(pageId, blocks.slice(100));
+    }
+
+    const newRaw = matter.stringify(content, { ...frontmatter, notion_page_id: pageId });
+    fs.writeFileSync(fullPath, newRaw, 'utf-8');
+    console.log(`[신규] ${relPath}`);
+  } catch (err) {
+    if (err.code === 'validation_error') {
+      console.log(`[검증 실패] ${relPath} → 에러 페이지로 신규 생성`);
+      await writeErrorPage(relPath, null, err);
+      return;
+    }
+    throw err;
+  }
+}
+
+// 4-1. 에러 처리
+// 에러 메시지로부터 사용자용 힌트 생성
+function getErrorHint(message) {
+  if (message.includes('Invalid URL for link')) {
+    return [
+      '본문에 잘못된 URL 형식이 있습니다. 다음을 확인하세요:',
+      '1) [텍스트](#fragment) 형태의 페이지 내 이동 링크 (목차 등)',
+      '2) http://localhost 또는 192.168.x.x 같은 내부망 URL',
+      '3) [텍스트](./file.md) 형태의 상대 경로 링크',
+      '4) 평문에 섞인 자동 링크 (예: 본문 중간의 http://example.com)',
+      '',
+      '해결: 문제 URL을 백틱(`)으로 감싸 인라인 코드로 만들거나, 텍스트로 풀어쓰세요.',
+      '예: `http://localhost:8545`',
+    ].join('\n');
+  }
+  if (message.includes('quote.children') || message.includes('should be not present')) {
+    return [
+      '본문에 Notion이 허용하지 않는 중첩 구조가 있습니다.',
+      '주로 3중 이상 중첩된 인용(>>>) 또는 깊은 리스트 중첩에서 발생합니다.',
+      '',
+      '해결: 중첩을 평탄화하거나 코드 블록으로 감싸주세요.',
+    ].join('\n');
+  }
+  return '본문의 마크다운 구조를 확인하세요. 위 에러 메시지를 참고하세요.';
+}
+
+// 에러 페이지 본문 블록 구성
+function buildErrorBlocks(relPath, err) {
+  const hint = getErrorHint(err.message);
+  return [
+    {
+      object: 'block',
+      type: 'callout',
+      callout: {
+        rich_text: [{ type: 'text', text: { content: '동기화 실패 - 본문 변환 중 에러 발생' } }],
+        icon: { emoji: '🚨' },
+        color: 'red_background',
+      },
+    },
+    {
+      object: 'block',
+      type: 'heading_2',
+      heading_2: { rich_text: [{ type: 'text', text: { content: '에러 메시지' } }] },
+    },
+    {
+      object: 'block',
+      type: 'code',
+      code: {
+        rich_text: [{ type: 'text', text: { content: err.message.slice(0, 1900) } }],
+        language: 'plain text',
+      },
+    },
+    {
+      object: 'block',
+      type: 'heading_2',
+      heading_2: { rich_text: [{ type: 'text', text: { content: '해결 안내' } }] },
+    },
+    {
+      object: 'block',
+      type: 'paragraph',
+      paragraph: { rich_text: [{ type: 'text', text: { content: hint } }] },
+    },
+    {
+      object: 'block',
+      type: 'heading_2',
+      heading_2: { rich_text: [{ type: 'text', text: { content: '대상 파일' } }] },
+    },
+    {
+      object: 'block',
+      type: 'code',
+      code: {
+        rich_text: [{ type: 'text', text: { content: relPath } }],
+        language: 'plain text',
+      },
+    },
+    {
+      object: 'block',
+      type: 'paragraph',
+      paragraph: {
+        rich_text: [{
+          type: 'text',
+          text: { content: '파일을 수정하고 다시 push하면 정상 페이지로 덮어써집니다.' },
+        }],
+      },
+    },
+  ];
+}
+
+// 에러 페이지 작성 (기존 페이지에 덮어쓰거나 신규 생성)
+async function writeErrorPage(relPath, existingPageId, err) {
+  const fullPath = path.join(REPO_ROOT, relPath);
+  const raw = fs.readFileSync(fullPath, 'utf-8');
+  const parsed = matter(raw);
+  const frontmatter = parsed.data;
+  const content = parsed.content;
+
+  const title = path.basename(relPath, '.md');
+  const { category, tag } = pathToCategoryTag(relPath);
+  const createdAt = getCreatedAt(relPath);
+  const updatedAt = getUpdatedAt(relPath);
+  const githubUrl = getGitHubUrl(relPath);
+
+  // 에러 상태임을 제목에 표시
+  const errorTitle = `[SYNC ERROR] ${title}`;
+  const properties = buildProperties(errorTitle, category, tag, createdAt, updatedAt, githubUrl);
+
+  const errorBlocks = buildErrorBlocks(relPath, err);
+
+  if (existingPageId) {
+    // 기존 페이지에 에러 정보 덮어쓰기
+    try {
+      await notion.pages.update({ page_id: existingPageId, properties });
+      await clearPageBlocks(existingPageId);
+      await appendInChunks(existingPageId, errorBlocks);
+      return;
+    } catch (e) {
+      if (e.code !== 'object_not_found') throw e;
+      // 페이지 사라졌으면 신규 생성으로 fallback
+    }
+  }
+
+  // 신규 에러 페이지 생성
   const page = await notion.pages.create({
     parent: { type: 'data_source_id', data_source_id: DATA_SOURCE_ID },
     properties,
-    children: blocks.slice(0, 100),
+    children: errorBlocks,
   });
-  pageId = page.id;
-  if (blocks.length > 100) {
-    await appendInChunks(pageId, blocks.slice(100));
-  }
 
-  const newRaw = matter.stringify(content, { ...frontmatter, notion_page_id: pageId });
+  // frontmatter에 page_id 기록
+  const newRaw = matter.stringify(content, { ...frontmatter, notion_page_id: page.id });
   fs.writeFileSync(fullPath, newRaw, 'utf-8');
-  console.log(`[신규] ${relPath}`);
 }
 
 // 5. 파일 삭제 처리
