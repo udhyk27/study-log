@@ -1,3 +1,6 @@
+---
+notion_page_id: 36181856-910c-8163-b1d2-fceac1a72c63
+---
 # GitHub Push → Notion 자동 동기화 구축기
 
 ## 목표
