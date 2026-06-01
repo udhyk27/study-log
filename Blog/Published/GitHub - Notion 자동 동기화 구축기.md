@@ -1,6 +1,7 @@
 ---
 notion_page_id: 36181856-910c-8161-badd-e0f787d6d675
 ---
+
 ## GitHub Push → Notion 자동 동기화 구축
 
 저는 GitHub 저장소에 개인 학습 및 메모용 문서를 Markdown 형식으로 정리하고 있습니다.
