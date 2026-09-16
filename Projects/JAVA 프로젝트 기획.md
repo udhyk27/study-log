@@ -41,10 +41,12 @@ notion_page_id: 36181856-910c-81a3-80ec-cf2a6d42dfc5
 각 프로젝트의 **핵심 기술만 명확히 어필**하고, 기능 욕심을 줄여 현실적인 기간 내 완성 가능한 규모로 구성.
 
 **포트폴리오 구성**
+- 메인 1: TicketFlow → 동시성 + Redis + Queue + 운영 로그 + 금액 정합성
+- 메인 2: EnterpriseFlow (기업 업무관리 시스템)
+
 - 서브 1: Price Tracker → 상품 가격 변동 및 URL 상태를 주기적으로 수집·모니터링하고 알림 및 AI 요약을 제공하는 자동화 시스템
 - 서브 2: AI Prompt Gateway → 외부 API 연동 / 병렬 처리 / Fallback
-- 메인 1: TicketFlow → 동시성 + Redis + Queue + 운영 로그 + 금액 정합성
-- 메인 2: JProxy → 네트워크 프로그래밍 / 차별화
+- 서브 3: JProxy → 네트워크 프로그래밍 / 차별화
 
 
 # 공통 기술 스택
@@ -56,6 +58,7 @@ notion_page_id: 36181856-910c-81a3-80ec-cf2a6d42dfc5
 - **테스트**: JUnit, k6
 - **API문서**:Swagger
 
+------------------------------------------------------------------------------------------------
 
 # 메인 1: TicketFlow (한정상품 구매 시스템)
 
@@ -156,97 +159,132 @@ notion_page_id: 36181856-910c-81a3-80ec-cf2a6d42dfc5
 
 4~5주
 
+------------------------------------------------------------------------------------------------
 
+# 메인 2: EnterpriseFlow (기업 업무관리 시스템)
 
-# 메인 2: JProxy (로컬 프록시 도구)
-# JPA, QueryDSL 조합 사용할지 생각
-# ex) Order -> User -> Product 조회 시 FetchJoin, EntityGraph 적용 전/후 쿼리 수 비교
-**역할**: 네트워크 프로그래밍 / 차별화
+**역할**: SI 실무형 웹 시스템 / 업무 프로세스 / 권한 관리
 
-다른 지원자와 겹치지 않는 영역(저수준 네트워크)을 보여주는 차별화 프로젝트.
+기업 내부의 업무·사용자·부서·결재 등을 관리하는 업무관리 시스템.
 
 ## 한 줄 설명
 
-내 PC에서 동작하며 HTTP/HTTPS 트래픽을 가로채 분석, 저장하는 로컬 프록시 도구.
+기업의 부서·사용자·업무·결재를 관리하고 업무 진행 상태를 통합 관리하는 웹 시스템.
 
 ## 기술 스택
 
 - Java 17, Spring Boot 3.x, Gradle
-- **프록시 코어**: LittleProxy
-- MySQL + JPA, Redis
-- Spring Security + JWT
+- Spring MVC, Spring Security
+- JPA, QueryDSL
+- MyBatis
+- MySQL
+- Vue.js, JavaScript
+- Redis
 - Docker
 - JUnit, Testcontainers
-- AWS EC2 다중 서버
-- AWS => RDS, Nginx, Github Actions, Docker Compose 기능 추가 고려
+- AWS EC2, RDS
+- Nginx, GitHub Actions
 
 ## 핵심 구현 기능
 
-### 인증
-- JWT 기반 로그인 (관리자 계정)
+### 사용자 / 권한 관리
 
-### 프록시 캡처
-- HTTP 요청 캡처
-- HTTPS 캡처 (MITM 방식)
-- CA 인증서 자동 생성
+- 로그인 / 로그아웃
+- JWT 기반 인증
+- 사용자 / 부서 관리
+- 관리자 / 일반 사용자 권한 분리
+- Spring Security 기반 접근 제어
 
-### 요청/응답 저장
-- 캡처 데이터 비동기 저장 (BlockingQueue 기반)
-- @Async 워커로 배치 저장
-- MySQL에 영속화
+### 업무 관리
+
+- 업무 등록 / 수정 / 삭제
+- 담당자 및 부서 지정
+- 업무 상태 관리
+- 우선순위 / 마감일 관리
+- 업무 진행 이력 조회
+
+### 전자결재
+
+- 결재 문서 작성
+- 결재선 지정
+- 승인 / 반려
+- 결재 상태 관리
+- 결재 이력 조회
+
+### 게시판 / 공지사항
+
+- 게시글 CRUD
+- 첨부파일 업로드 / 다운로드
+- 검색 / 페이징
+- 공지사항 관리
+
+### 관리자
+
+- 사용자 / 부서 관리
+- 권한 관리
+- 공통 코드 관리
+- 시스템 활동 로그 조회
 
 ### 조회 / 검색
-- 요청 목록 조회
-- 호스트 / 메서드 / 상태코드 필터
-- 키워드 검색
 
-### 간단 대시보드
-- 요청 목록 테이블
-- 선택한 요청의 헤더 / 바디 상세 보기
+- 조건별 검색
+- 페이징 처리
+- 정렬
+- QueryDSL을 활용한 동적 검색
 
-## 자바/Spring 핵심 기술
+## JPA / MyBatis 활용
 
-### 네트워크 프로그래밍 (핵심 어필)
-- LittleProxy 기반 프록시 코어
-- HTTPS MITM 구현
-- CA 인증서 동적 생성
+### JPA
 
-### 비동기 처리
-- BlockingQueue 기반 캡처 파이프라인
-- @Async 배치 저장
-- 프록시 스레드와 저장 스레드 분리
+- 사용자 / 부서 / 업무 / 결재 등 도메인 관리
+- Entity 연관관계 매핑
+- JPQL / QueryDSL 활용
 
-### Redis 활용 (간단히)
-- 최근 요청 캐시
-- JWT Refresh Token 저장
+### MyBatis
 
-### 인증/인가
-- Spring Security + JWT
+- 복잡한 통계 / 관리자 조회
+- 다중 JOIN 쿼리
+- 동적 SQL
+- 기존 SI 방식의 SQL 중심 개발 경험
+
+## 성능 / 운영
+
+- Redis를 활용한 공통 코드 / 조회 데이터 캐싱
+- 대용량 목록 조회 페이징 최적화
+- N+1 문제 분석 및 Fetch Join 적용
+- DB 인덱스 적용 전후 성능 비교
 
 ## 테스트
 
 - JUnit
-- Testcontainers (MySQL, Redis 실제 컨테이너)
+- Spring Boot Test
+- Testcontainers 기반 MySQL / Redis 테스트
+- Controller / Service / Repository 테스트
 
-## 배포 / 시연
+## 배포
 
-- Docker 이미지로 배포
-- 본인 PC에서 실행해서 테스트
-- 시연 영상 (GIF) README에 첨부
+- Docker 기반 컨테이너화
+- AWS EC2 배포
+- AWS RDS 연동
+- Nginx Reverse Proxy
+- GitHub Actions CI/CD
 
 ## 핵심 어필 포인트
 
-- 네트워크 프로그래밍 (TLS MITM, 인증서 처리) → 차별화
-- 캡처 → Queue → 비동기 저장 파이프라인 설계
-- 메인 1과 다른 기술 영역으로 시야의 폭 어필
+- 실제 SI에서 자주 사용하는 업무관리 시스템 구조 경험
+- Spring MVC + JPA + MyBatis를 함께 활용
+- 인증 / 인가 및 권한 관리
+- 복잡한 SQL 및 동적 검색 처리
+- 페이징 / 인덱스 / N+1 문제 해결
+- Docker + AWS 기반 배포 및 운영
 
 ## 예상 기간
 
-3~4주
+4~6주
 
+------------------------------------------------------------------------------------------------
 
-
-# 서브 2: AI Prompt Gateway
+# 서브 1: AI Prompt Gateway
 
 **역할**: 외부 API 연동 / 병렬 처리 / 장애 대응 (Fallback)
 
@@ -332,7 +370,72 @@ Judge AI 평가
 
 2~3주
 
+------------------------------------------------------------------------------------------------
 
+# 서브 2: JProxy (로컬 프록시 도구)
+
+**역할**: Java 네트워크 프로그래밍 / 비동기 처리 / 차별화
+
+내 PC에서 동작하며 HTTP/HTTPS 트래픽을 가로채 분석하고 저장하는 로컬 프록시 도구.
+
+## 한 줄 설명
+
+HTTP/HTTPS 요청을 캡처하고 비동기 방식으로 저장·조회할 수 있는 로컬 프록시 시스템.
+
+## 기술 스택
+
+- Java 17, Spring Boot 3.x, Gradle
+- LittleProxy
+- MySQL + JPA
+- Redis
+- Spring Security + JWT
+- JUnit, Testcontainers
+- Docker
+
+## 핵심 구현 기능
+
+### 프록시 캡처
+- HTTP 요청/응답 캡처
+- HTTPS 트래픽 캡처
+- 요청 URL / Method / Status Code / Header 분석
+
+### 비동기 저장
+- BlockingQueue 기반 요청 처리
+- 프록시 스레드와 DB 저장 작업 분리
+- @Async 기반 비동기 저장
+
+### 조회 / 검색
+- 요청 목록 조회
+- 호스트 / Method / Status Code 필터
+- 요청·응답 상세 조회
+
+### 인증
+
+- Spring Security + JWT 기반 관리자 인증
+
+## 테스트
+
+- JUnit
+- Testcontainers 기반 MySQL 테스트
+
+## 배포 / 시연
+
+- Docker 기반 실행
+- 로컬 PC에서 프록시 설정 후 HTTP/HTTPS 요청 캡처
+- 시연 영상 및 GIF README 첨부
+
+## 핵심 어필 포인트
+
+- LittleProxy를 활용한 Java 네트워크 프로그래밍
+- HTTP/HTTPS 트래픽 처리
+- BlockingQueue + 비동기 저장 파이프라인
+- 일반적인 CRUD 프로젝트와 차별화
+
+## 예상 기간
+
+1~2주
+
+------------------------------------------------------------------------------------------------
 
 # 서브 3: Price Tracker (가격 추적 시스템)
 
@@ -406,6 +509,7 @@ Judge AI 평가
 
 1~2주
 
+------------------------------------------------------------------------------------------------
 
 
 # 공통 운영 / 배포
