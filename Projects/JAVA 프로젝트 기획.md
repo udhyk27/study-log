@@ -41,12 +41,12 @@ notion_page_id: 36181856-910c-81a3-80ec-cf2a6d42dfc5
 각 프로젝트의 **핵심 기술만 명확히 어필**하고, 기능 욕심을 줄여 현실적인 기간 내 완성 가능한 규모로 구성.
 
 **포트폴리오 구성**
-- 메인 1: TicketFlow → 동시성 + Redis + Queue + 운영 로그 + 금액 정합성
-- 메인 2: EnterpriseFlow (기업 업무관리 시스템)
+- 메인 1: WorkOffice (기업 업무관리 시스템)
+- 메인 2: TicketNow → 동시성 + Redis + Queue + 운영 로그 + 금액 정합성
 
-- 서브 1: Price Tracker → 상품 가격 변동 및 URL 상태를 주기적으로 수집·모니터링하고 알림 및 AI 요약을 제공하는 자동화 시스템
-- 서브 2: AI Prompt Gateway → 외부 API 연동 / 병렬 처리 / Fallback
-- 서브 3: JProxy → 네트워크 프로그래밍 / 차별화
+- 서브 1: PriceMonitor → 상품 가격 변동 및 URL 상태를 주기적으로 수집·모니터링하고 알림 및 AI 요약을 제공하는 자동화 시스템
+- 서브 2: AI Gateway → 외부 API 연동 / 병렬 처리 / Fallback
+- 서브 3: TrafficMonitor → 네트워크 프로그래밍 / 차별화
 
 
 # 공통 기술 스택
@@ -59,517 +59,280 @@ notion_page_id: 36181856-910c-81a3-80ec-cf2a6d42dfc5
 - **API문서**:Swagger
 
 ------------------------------------------------------------------------------------------------
+# 메인 1: WorkOffice (기업 그룹웨어)
 
-# 메인 1: TicketFlow (한정상품 구매 시스템)
+**목표**: SI 실무형 웹 시스템 / 업무 프로세스 / 권한 관리
 
-# DB인덱스 적용 전후 실행계획 캡처(전후비교)
-# 테스트 컨테이너 - MySQL, Redis
+기업 내부 업무와 조직 정보를 관리하는 그룹웨어 시스템.
 
-**역할**: 동시성 + 락 비교 + Redis + Queue 비동기 + 운영 로그
+## 기술
+Java 17, Spring Boot, JPA, Spring Security, QueryDSL, MySQL, Vue.js, Redis, Docker, AWS, JUnit
 
-판매자가 한정 수량 상품을 등록하면 사용자가 선착순으로 구매하는 시스템. 동시 구매 충돌 해결, 락 전략 비교, 비동기 로그 처리, 운영 모니터링을 한 프로젝트에 통합.
+## 주요 기능
+- 사용자 / 부서 / 직급 관리
+- 조직도 / 사용자 프로필
+- 부서원 생일 캘린더
+- 개인 / 부서 / 회사 일정 관리
+- 일정 참석자 / 알림
+- 업무 등록 / 담당자 / 상태 / 우선순위 / 마감일
+- 업무 진행 이력
+- 전자결재 문서 / 결재선 / 승인 / 반려 / 이력
+- 공지사항 / 자유게시판
+- 첨부파일 / 검색 / 페이징
+- 관리자 사용자 / 부서 / 권한 관리
+- 공통 코드 / 시스템 로그
 
-## 핵심 구현 기능
+## 핵심 학습
+- Spring Security + JWT 인증 / 인가
+- JPA + QueryDSL
+- Redis 캐싱 / 알림
+- Scheduler 기반 알림
+- N+1 분석 / Fetch Join
+- DB Index / 페이징 최적화
+- JUnit + Testcontainers
+- Docker + AWS 배포
+- GitHub Actions CI/CD
 
-### 회원 / 인증
-- 회원가입
-- JWT 기반 로그인
+## 핵심 포인트
+- SI에서 사용하는 그룹웨어 형태
+- JPA / QueryDSL 기반 CRUD 및 복잡한 조회
+- 인증 / 인가 / 권한 관리
+- 일정 / 결재 / 알림 업무 프로세스
+- DB 및 조회 성능 최적화
+- 운영 환경을 고려한 배포
+------------------------------------------------------------------------------------------------
 
-### 상품 관리
-- 상품 등록 (판매자)
-- 한정 상품 조회 (목록 / 상세)
-- 현재 재고 상태 표시
+# 메인 2: TicketNow (한정상품 구매 시스템)
 
-### 선착순 구매
-- 구매 요청 처리
-- 재고 차감
-- 1인 1개 제한
-- 주문 상태 관리 (PENDING_PAYMENT / PAID / EXPIRED)
+**목표**: 동시성 + Lock 비교 + Redis + Queue + 성능 테스트
 
-### 결제 대기 TTL
-- Redis TTL 기반 임시 재고 선점
-- 제한 시간 내 결제 없으면 자동 재고 복구
+한정 수량 상품 선착순 구매 시스템
 
-### 운영 로그 시스템
-- 주문 요청 로그 수집
-- Redis Queue 저장
-- Worker가 Batch Insert
-- 장애 / 실패 주문 조회
-- TPS / 실패율 통계 API + 간단 테이블 (차트는 X)
+## 기술
+Java 17, Spring Boot, JPA, MySQL, Redis, Docker, JUnit, k6
 
-## 운영 로그 아키텍처
+## 주요 기능
+- 회원가입 / JWT 로그인
+- 상품 등록 / 조회 / 재고 관리
+- 선착순 구매 / 1인 1개 제한
+- 주문 상태 관리
+- 결제 대기 TTL + 미결제 재고 복구
+- 주문 로그 → Redis Queue → Worker → MySQL Batch 저장
 
-```
-주문 요청 → Redis Queue → Worker → MySQL (Batch Insert) → 통계 API
-```
-
-## 자바/Spring 핵심 기술
-
-### 동시성 처리
+## 핵심 학습
 - synchronized
-- ExecutorService 기반 동시 요청 테스트
-
-### 락 처리 (핵심 어필)
-- DB 비관락
-- DB 낙관락
-- Redis 분산 락
-- 4가지 방식 TPS / 실패율 비교
-
-### 트랜잭션
-- 주문 생성 + 재고 차감 원자성 보장
-- 실패 시 Rollback
-
-### Redis 활용
-- 재고 카운팅
-- 결제 대기 TTL
-- 운영 로그 Queue
-
-### 비동기 처리
-- @Async
-- Queue 기반 로그 처리
-- Worker Batch Insert
-
-### 예외 처리
-- 커스텀 예외
-- 전역 예외 처리
-
-## 테스트
-
-- **JUnit**: 서비스 로직 검증
-- **동시성 테스트**: ExecutorService로 동시 구매 시뮬레이션
-- **성능 테스트**: k6 (TPS, 응답시간, 실패율)
-- **비동기 처리 비교**: 동기 vs 비동기 TPS 비교
+- 비관적 Lock / 낙관적 Lock / Redis Lock 비교
+- 트랜잭션 / 재고 정합성
+- Redis TTL
+- Queue + 비동기 처리
+- ExecutorService 동시성 테스트
+- k6 부하 테스트
+- DB Index / 실행계획 비교
 
 ## 배포
-
-- Docker
-- GitHub Actions (자동 빌드 / 테스트 / 배포)
-- AWS EC2
-
-## 핵심 어필 포인트
-
-- 동시 구매 충돌 상황 재현 및 해결
-- synchronized / 비관락 / 낙관락 / Redis Lock 4종 비교 → 그래프
-- TTL 기반 결제 대기 및 재고 복구
-- 트랜잭션 기반 재고 정합성 보장
-- Queue 기반 비동기 로그 처리 (동기 대비 성능 개선 수치)
-- 운영 로그로 장애 / 실패 추적
+Docker + GitHub Actions + AWS EC2
 
 ## 예상 기간
-
 4~5주
 
 ------------------------------------------------------------------------------------------------
+# 서브 1: AI Gateway
 
-# 메인 2: EnterpriseFlow (기업 업무관리 시스템)
+**목표**: 외부 API 연동 / 병렬 처리 / 장애 대응
 
-**역할**: SI 실무형 웹 시스템 / 업무 프로세스 / 권한 관리
+GPT, Claude, Gemini를 하나의 API에서 관리하고 모델 선택, 병렬 비교, Fallback을 제공하는 AI Gateway.
 
-기업 내부의 업무·사용자·부서·결재 등을 관리하는 업무관리 시스템.
+## 기술
+Java 17, Spring Boot, WebClient, CompletableFuture, Redis, JUnit, WireMock, Docker, AWS EC2
 
-## 한 줄 설명
-
-기업의 부서·사용자·업무·결재를 관리하고 업무 진행 상태를 통합 관리하는 웹 시스템.
-
-## 기술 스택
-
-- Java 17, Spring Boot 3.x, Gradle
-- Spring MVC, Spring Security
-- JPA, QueryDSL
-- MyBatis
-- MySQL
-- Vue.js, JavaScript
-- Redis
-- Docker
-- JUnit, Testcontainers
-- AWS EC2, RDS
-- Nginx, GitHub Actions
-
-## 핵심 구현 기능
-
-### 사용자 / 권한 관리
-
-- 로그인 / 로그아웃
-- JWT 기반 인증
-- 사용자 / 부서 관리
-- 관리자 / 일반 사용자 권한 분리
-- Spring Security 기반 접근 제어
-
-### 업무 관리
-
-- 업무 등록 / 수정 / 삭제
-- 담당자 및 부서 지정
-- 업무 상태 관리
-- 우선순위 / 마감일 관리
-- 업무 진행 이력 조회
-
-### 전자결재
-
-- 결재 문서 작성
-- 결재선 지정
-- 승인 / 반려
-- 결재 상태 관리
-- 결재 이력 조회
-
-### 게시판 / 공지사항
-
-- 게시글 CRUD
-- 첨부파일 업로드 / 다운로드
-- 검색 / 페이징
-- 공지사항 관리
-
-### 관리자
-
-- 사용자 / 부서 관리
-- 권한 관리
-- 공통 코드 관리
-- 시스템 활동 로그 조회
-
-### 조회 / 검색
-
-- 조건별 검색
-- 페이징 처리
-- 정렬
-- QueryDSL을 활용한 동적 검색
-
-## JPA / MyBatis 활용
-
-### JPA
-
-- 사용자 / 부서 / 업무 / 결재 등 도메인 관리
-- Entity 연관관계 매핑
-- JPQL / QueryDSL 활용
-
-### MyBatis
-
-- 복잡한 통계 / 관리자 조회
-- 다중 JOIN 쿼리
-- 동적 SQL
-- 기존 SI 방식의 SQL 중심 개발 경험
-
-## 성능 / 운영
-
-- Redis를 활용한 공통 코드 / 조회 데이터 캐싱
-- 대용량 목록 조회 페이징 최적화
-- N+1 문제 분석 및 Fetch Join 적용
-- DB 인덱스 적용 전후 성능 비교
-
-## 테스트
-
-- JUnit
-- Spring Boot Test
-- Testcontainers 기반 MySQL / Redis 테스트
-- Controller / Service / Repository 테스트
-
-## 배포
-
-- Docker 기반 컨테이너화
-- AWS EC2 배포
-- AWS RDS 연동
-- Nginx Reverse Proxy
-- GitHub Actions CI/CD
-
-## 핵심 어필 포인트
-
-- 실제 SI에서 자주 사용하는 업무관리 시스템 구조 경험
-- Spring MVC + JPA + MyBatis를 함께 활용
-- 인증 / 인가 및 권한 관리
-- 복잡한 SQL 및 동적 검색 처리
-- 페이징 / 인덱스 / N+1 문제 해결
-- Docker + AWS 기반 배포 및 운영
-
-## 예상 기간
-
-4~6주
-
-------------------------------------------------------------------------------------------------
-
-# 서브 1: AI Prompt Gateway
-
-**역할**: 외부 API 연동 / 병렬 처리 / 장애 대응 (Fallback)
-
-## 한 줄 설명
-
-GPT, Claude, Gemini를 하나의 API에서 관리하고 모델 선택, 병렬 비교, 장애 대응(Fallback)을 제공하는 AI Gateway.
-
-사용자 질문
-      ↓
-GPT / Gemini / Claude 병렬 호출
-      ↓
-응답 수집
-      ↓
-Judge AI 평가
-(품질/정확도/일관성)
-      ↓
-최종 추천 답변 생성
-
-## 핵심 구현 기능
-
-### 모델 선택
-- GPT / Claude / Gemini 직접 선택
-
-### 병렬 응답 비교
-- 여러 모델 동시 호출
-- 응답 시간 / 내용 비교
-
-### 자동 Fallback
-- 모델 실패 시 자동 다른 모델 호출
-- 예: GPT 실패 → Claude → Gemini
-
-### Prompt 로그
-- 질문 / 응답 저장
-- 응답 시간 기록
-
-### Redis
-- 응답 캐시
-- Rate Limit
-
-## 자바/Spring 핵심 기술
-
-### 외부 API 연동
-- WebClient 기반 비동기 호출
-- 모델별 API 스펙 추상화
-
-### 병렬 처리
-- CompletableFuture
-- 여러 모델 동시 호출 후 결과 취합
-
-### 디자인 패턴
-- Strategy Pattern (모델별 호출 전략)
-- Chain of Responsibility (Fallback 체인)
-
-### 장애 대응
-- Retry (일시적 실패 재시도)
-- Timeout (응답 지연 차단)
-- Fallback (대체 모델 호출)
-
-### Redis 활용
-- 동일 프롬프트 응답 캐시
+## 주요 기능
+- GPT / Claude / Gemini 모델 선택
+- 여러 AI 모델 병렬 호출
+- 모델별 응답 시간 / 내용 비교
+- Judge AI를 통한 응답 평가
+- 모델 장애 시 자동 Fallback
+- Prompt / 응답 / 응답 시간 로그
+- Redis 응답 캐시
 - 사용자별 Rate Limit
 
-## 테스트
+## 핵심 학습
+- WebClient 기반 비동기 API 호출
+- CompletableFuture 병렬 처리
+- Strategy Pattern
+- Chain of Responsibility
+- Retry / Timeout / Fallback
+- Redis Cache / Rate Limit
+- 외부 API Mocking
+- 장애 상황 테스트
 
+## 테스트
 - JUnit
-- 외부 API Mocking (WireMock 또는 MockWebServer)
-- Fallback 시나리오 테스트
+- WireMock / MockWebServer
+- API 장애 / Timeout / Fallback 테스트
+- 병렬 처리 성능 비교
 
 ## 배포
+Docker + AWS EC2
 
-- Docker
-- AWS EC2
-
-## 핵심 어필 포인트
-
-- AI API Gateway 설계 (모델 추상화)
+## 핵심 포인트
+- 여러 AI API를 추상화한 Gateway 구조
 - CompletableFuture 기반 병렬 요청 처리
-- Retry / Timeout / Fallback 장애 대응 구조
-- 모델 비교 기능 (응답 시간, 내용 차이)
-- 외부 API 연동 경험
-
-## 예상 기간
-
-2~3주
-
+- Retry / Timeout / Fallback 장애 대응
+- Redis 기반 캐싱 / Rate Limit
+- 외부 API 연동 및 장애 처리 경험
 ------------------------------------------------------------------------------------------------
+# 서브 2: TrafficMonitor (로컬 프록시 도구)
 
-# 서브 2: JProxy (로컬 프록시 도구)
+**목표**: Java 네트워크 프로그래밍 / 비동기 처리 / 차별화
 
-**역할**: Java 네트워크 프로그래밍 / 비동기 처리 / 차별화
+HTTP/HTTPS 트래픽을 캡처하고 비동기 방식으로 저장·조회하는 로컬 프록시 시스템.
 
-내 PC에서 동작하며 HTTP/HTTPS 트래픽을 가로채 분석하고 저장하는 로컬 프록시 도구.
+## 기술
+Java 17, Spring Boot, LittleProxy, MySQL, JPA, Redis, Spring Security, JWT, JUnit, Testcontainers, Docker
 
-## 한 줄 설명
-
-HTTP/HTTPS 요청을 캡처하고 비동기 방식으로 저장·조회할 수 있는 로컬 프록시 시스템.
-
-## 기술 스택
-
-- Java 17, Spring Boot 3.x, Gradle
-- LittleProxy
-- MySQL + JPA
-- Redis
-- Spring Security + JWT
-- JUnit, Testcontainers
-- Docker
-
-## 핵심 구현 기능
-
-### 프록시 캡처
-- HTTP 요청/응답 캡처
-- HTTPS 트래픽 캡처
-- 요청 URL / Method / Status Code / Header 분석
-
-### 비동기 저장
+## 주요 기능
+- HTTP / HTTPS 요청·응답 캡처
+- URL / Method / Status Code / Header 분석
+- 요청 목록 조회
+- Host / Method / Status Code 필터
+- 요청·응답 상세 조회
 - BlockingQueue 기반 요청 처리
 - 프록시 스레드와 DB 저장 작업 분리
-- @Async 기반 비동기 저장
+- 비동기 DB 저장
+- 관리자 JWT 인증
 
-### 조회 / 검색
-- 요청 목록 조회
-- 호스트 / Method / Status Code 필터
-- 요청·응답 상세 조회
-
-### 인증
-
-- Spring Security + JWT 기반 관리자 인증
+## 핵심 학습
+- LittleProxy 기반 Java 네트워크 프로그래밍
+- HTTP / HTTPS 트래픽 처리
+- BlockingQueue 기반 비동기 처리
+- Proxy와 DB 저장 작업 분리
+- @Async 비동기 처리
+- JUnit + Testcontainers
+- Spring Security + JWT
 
 ## 테스트
-
 - JUnit
 - Testcontainers 기반 MySQL 테스트
+- 동시 요청 처리 테스트
+- 비동기 저장 테스트
 
 ## 배포 / 시연
-
 - Docker 기반 실행
-- 로컬 PC에서 프록시 설정 후 HTTP/HTTPS 요청 캡처
-- 시연 영상 및 GIF README 첨부
+- 로컬 PC 프록시 설정
+- HTTP / HTTPS 요청 캡처
+- README 시연 영상 / GIF
 
-## 핵심 어필 포인트
-
+## 핵심 포인트
 - LittleProxy를 활용한 Java 네트워크 프로그래밍
-- HTTP/HTTPS 트래픽 처리
+- HTTP / HTTPS 트래픽 처리
 - BlockingQueue + 비동기 저장 파이프라인
 - 일반적인 CRUD 프로젝트와 차별화
-
-## 예상 기간
-
-1~2주
-
 ------------------------------------------------------------------------------------------------
+# 서브 3: PriceMonitor (가격 추적 시스템)
 
-# 서브 3: Price Tracker (가격 추적 시스템)
-
-**역할**: 스케줄러 / 크롤링 / 알림 자동화
-
-## 한 줄 설명
+**목표**: Scheduler / 크롤링 / 알림 자동화
 
 상품, ETF, GPU 등의 가격을 주기적으로 수집하고 목표 가격 도달 시 알림을 보내는 시스템.
 
-## 핵심 구현 기능
+## 기술
+Java 17, Spring Boot, JPA, MySQL, Jsoup, WebClient, Redis, JUnit, Docker, AWS EC2
 
-### 추적 등록
-- URL 등록
+## 주요 기능
+- 상품 URL 등록
 - 목표 가격 설정
-
-### 가격 수집
-- 주기적 크롤링
+- 주기적 가격 수집
 - 가격 변화 감지
-
-### 목표가 알림
-- 목표 가격 도달 시 Slack / Email 알림
-
-### 가격 이력
-- 가격 변동 조회
-- 최저가 / 최고가 확인
-
-### Redis
+- 목표 가격 도달 알림
+- Slack / Email 알림
+- 가격 변동 이력 조회
+- 최저가 / 최고가 조회
 - 최근 가격 캐시
 - 중복 알림 방지
 
-## 자바/Spring 핵심 기술
-
-### 스케줄링
-- @Scheduled로 주기적 가격 수집
-
-### 외부 데이터 수집
-- Jsoup (HTML 파싱)
-- WebClient (API 호출)
-
-### Retry
-- 크롤링 실패 시 재시도
-- 영구 실패는 에러 로그
-
-### 비동기 알림
-- @Async로 Slack / Email 발송
-- 알림 실패 격리
-
-### Redis 활용
-- 최근 가격 캐시 (DB 부하 감소)
-- 중복 알림 방지 (이미 알림 보낸 목표가 기록)
+## 핵심 학습
+- @Scheduled 기반 주기적 작업
+- Jsoup HTML 파싱
+- WebClient API 호출
+- 외부 데이터 수집
+- Retry / 장애 처리
+- @Async 비동기 알림
+- Redis 캐싱
+- Redis 기반 중복 알림 방지
 
 ## 테스트
-
 - JUnit
-- 스케줄러 동작 검증
-- Mocking 기반 크롤링 테스트
+- Scheduler 동작 테스트
+- 크롤링 Mocking 테스트
+- 알림 실패 / Retry 테스트
 
 ## 배포
+Docker + AWS EC2
 
-- Docker
-- AWS EC2
-
-## 핵심 어필 포인트
-
+## 핵심 포인트
 - Scheduler 기반 자동화
-- 외부 데이터 수집 (크롤링)
+- 외부 데이터 수집 및 크롤링
 - 비동기 알림 시스템
 - Retry / 장애 격리
-
-## 예상 기간
-
-1~2주
-
+- Redis 기반 캐싱 / 중복 처리
 ------------------------------------------------------------------------------------------------
-
-
 # 공통 운영 / 배포
 
 ## Docker
-- 실행 환경 통일
+- 개발 / 테스트 / 배포 환경 통일
 
 ## GitHub Actions
 - 자동 빌드 / 테스트 / 배포
 
 ## AWS EC2
-- 배포 환경 (TicketFlow, Mini Payment Ledger, AI Prompt Gateway, Price Tracker)
-- JProxy는 로컬 실행
+- WorkOffice
+- TicketNow
+- AI Gateway
+- PriceMonitor
+
+## Local
+- TrafficMonitor
+- 로컬 프록시 기반 실행
 
 
+# 프로젝트 진행 순서
 
-# 시간 배분 (총 약 4개월)
-
-| 순서 | 프로젝트 | 기간 | 비고 |
-|||||
-| 1 | Price Tracker (서브 3) | 1~2주 | 스케줄러 / 크롤링 / 알림 |
-| 2 | AI Prompt Gateway (서브 2) | 2~3주 | 외부 API / 병렬 / Fallback |
-| 3 | TicketFlow (메인 1) | 4~5주 | 동시성 + Queue + 운영 로그 통합 |
-| 4 | JProxy (메인 2) | 3~4주 | 차별화 |
-| 5 | 문서화 / 배포 정리 | 1주 | README, 성능 그래프, 데모 |
-
+| 순서 | 프로젝트 | 핵심 내용 |
+|---|---|---|
+| 1 | WorkOffice (메인 1) | Spring Boot / JPA / Security / 그룹웨어 |
+| 2 | AI Gateway (서브 1) | 외부 API / 병렬 처리 / Fallback |
+| 3 | PriceMonitor (서브 3) | Scheduler / 크롤링 / 알림 |
+| 4 | TicketNow (메인 2) | 동시성 / Lock / Redis / Queue |
+| 5 | TrafficMonitor (서브 2) | 네트워크 / Proxy / 비동기 처리 |
+| 6 | 문서화 / 정리 | README / 성능 테스트 / 데모 |
 
 
 # 어필 방향
 
-- 문제 재현 → 해결 → 성능 비교
+- 문제 상황 → 재현 → 해결 → 성능 비교
 - TPS / 응답시간 / 실패율 수치화
-- 핵심 기술을 깊게 (기능 욕심 X)
-
+- 기능보다 핵심 기술을 깊게 구현
+- 프로젝트마다 서로 다른 기술 경험 확보
 
 
 # 프로젝트별 한 줄 어필
-- **Price Tracker**: 스케줄러 기반 자동화 / 크롤링 / 알림
-- **AI Prompt Gateway**: 외부 API 병렬 처리 / Fallback 장애 대응
-- **TicketFlow**: 동시성 + 비동기 + 운영 로그 통합 구현
-- **JProxy**: 네트워크 프로그래밍으로 차별화
+
+- **WorkOffice**: SI 실무형 그룹웨어 / JPA / Security / 업무 프로세스
+- **AI Gateway**: 외부 API 병렬 처리 / Retry / Timeout / Fallback
+- **PriceMonitor**: Scheduler 기반 자동화 / 크롤링 / 비동기 알림
+- **TicketNow**: 동시성 / Lock 비교 / Redis / Queue / 성능 테스트
+- **TrafficMonitor**: Java 네트워크 프로그래밍 / Proxy / 비동기 처리
 
 
+# 전체 흐름
 
-# 우선순위 진행 순서
-1. **Price Tracker** (서브 3, 1~2주)
-2. **AI Prompt Gateway** (서브 2, 2~3주)
-3. **TicketFlow 완성** (메인 1, 배포까지)
-   - 1~2주차: 회원, 상품, 선착순 구매, 락 비교
-   - 3주차: Redis TTL, 운영 로그 Queue + Worker
-   - 4~5주차: 통계 API, 성능 테스트, 배포
-4. **JProxy 진행** (메인 2, 차별화 포인트 확보)
-5. 문서화 / README / 성능 리포트 정리
-
-Scout
+WorkOffice
     ↓
-Price Tracker
+AI Gateway
     ↓
-AI Prompt Gateway
+PriceMonitor
     ↓
-TicketFlow
+TicketNow
     ↓
-JProxy
+TrafficMonitor
+    ↓
+문서화 / 성능 테스트 / README 정리
