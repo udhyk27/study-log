@@ -1,3 +1,6 @@
+---
+notion_page_id: 3dd81856-910c-8198-9a2f-e28d5cd1284e
+---
 # AWS SAA-C03
 
 https://pottatt0.tistory.com/entry/AWS-SAA-C03-%ED%95%A9%EA%B2%A9-%ED%9B%84%EA%B8%B0-%EC%B5%9C%EC%8B%A0-%EB%8D%A4%ED%94%84-%EA%B3%B5%EC%9C%A0-2026
