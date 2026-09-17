@@ -82,24 +82,26 @@ Java 17, Spring Boot, JPA, Spring Security, QueryDSL, MySQL, Vue.js, Redis, Dock
 - 관리자 사용자 / 부서 / 권한 관리
 - 공통 코드 / 시스템 로그
 
-## 핵심 학습
-- Spring Security + JWT 인증 / 인가
-- JPA + QueryDSL
-- Redis 캐싱 / 알림
-- Scheduler 기반 알림
-- N+1 분석 / Fetch Join
-- DB Index / 페이징 최적화
-- JUnit + Testcontainers
-- Docker + AWS 배포
-- GitHub Actions CI/CD
+## 차별화 기능
 
-## 핵심 포인트
-- SI에서 사용하는 그룹웨어 형태
-- JPA / QueryDSL 기반 CRUD 및 복잡한 조회
-- 인증 / 인가 / 권한 관리
-- 일정 / 결재 / 알림 업무 프로세스
-- DB 및 조회 성능 최적화
-- 운영 환경을 고려한 배포
+### 업무 자동화
+- 마감 D-3 / D-1 자동 알림
+- 장기 미처리 업무 알림
+- 반복 업무 자동 생성
+- 업무 상태 변경에 따른 후속 처리
+- Scheduler + Redis + 비동기 알림
+
+### 전자결재 Workflow
+- 결재선 순차 처리
+- 현재 결재자만 승인 / 반려 가능
+- 반려 시 작성자에게 반환
+- 결재 이력 관리
+- 결재 상태 관리
+
+```text
+DRAFT → PENDING → APPROVED → COMPLETED
+                 ↘ REJECTED
+```
 ------------------------------------------------------------------------------------------------
 
 # 메인 2: TicketNow (한정상품 구매 시스템)
