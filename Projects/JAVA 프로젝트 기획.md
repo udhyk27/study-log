@@ -71,6 +71,8 @@ Java 17, Spring Boot, JPA, Spring Security, QueryDSL, MySQL, Vue.js, Redis, Dock
 ## 주요 기능
 - 사용자 / 부서 / 직급 관리
 - 조직도 / 사용자 프로필
+- 사용자 근무 상태 관리 (재직 / 휴가 / 출장 / 부재)
+- 조직도에서 사용자 현재 상태 표시
 - 부서원 생일 캘린더
 - 개인 / 부서 / 회사 일정 관리
 - 일정 참석자 / 알림
