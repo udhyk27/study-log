@@ -1,11 +1,8 @@
 ---
 notion_page_id: 36181856-910c-812f-9aaa-d58552232316
 ---
-# 제목 후보
-# DevFlow
-# GitPulse
-# RepoBoard
 
+# Gitivo
 Git 기반 프로젝트 진행 상황과 협업 상태를 모바일에서 모니터링할 수 있는 개발 협업 앱
 
 * GitHub 로그인
